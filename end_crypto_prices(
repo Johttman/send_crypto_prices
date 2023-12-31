@@ -1,0 +1,60 @@
+import discord
+import requests
+import asyncio
+
+# Токен вашего бота Discord
+TOKEN = 'YOUR_DISCORD_BOT_TOKEN'
+
+# ID канала, в котором будет отображаться информация о курсах криптовалют
+CHANNEL_ID = 1234567890  # Замените на ID вашего канала
+
+# Функция для получения курса криптовалюты
+async def get_crypto_prices():
+    url = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd'
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        btc_price = data['bitcoin']['usd']
+        eth_price = data['ethereum']['usd']
+        return f'Курс Bitcoin: ${btc_price}\nКурс Ethereum: ${eth_price}'
+    else:
+        return 'Не удалось получить данные о курсах криптовалют'
+
+# Функция для отправки сообщения с курсами криптовалют в указанный канал каждый час
+async def send_crypto_prices():
+    await client.wait_until_ready()
+    channel = client.get_channel(CHANNEL_ID)
+    while not client.is_closed():
+        crypto_prices = await get_crypto_prices()
+        await channel.send(crypto_prices)
+        await asyncio.sleep(3600)  # Ожидание 1 часа (3600 секунд)
+
+# Функция для обработки команды обмена
+async def exchange(message):
+    # Ваш код обмена криптовалют
+    await message.channel.send('Функция обмена временно недоступна')
+
+# Создание экземпляра клиента Discord
+client = discord.Client()
+
+# Обработчик события подключения бота
+@client.event
+async def on_ready():
+    print(f'Бот {client.user.name} подключился к Discord!')
+
+# Обработчик события сообщения
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+
+    if message.content.startswith('!курс'):
+        crypto_prices = await get_crypto_prices()
+        await message.channel.send(crypto_prices)
+    
+    elif message.content.startswith('!обмен'):
+        await exchange(message)
+
+# Запуск бота Discord
+client.loop.create_task(send_crypto_prices())
+client.run(TOKEN)
